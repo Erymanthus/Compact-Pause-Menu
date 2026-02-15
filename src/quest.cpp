@@ -1,0 +1,81 @@
+﻿#include <Geode/Geode.hpp>
+#include <Geode/modify/PauseLayer.hpp>
+#include <Geode/modify/ChallengeNode.hpp>
+
+using namespace geode::prelude;
+static const char* MY_QUEST_MENU_ID = "mini-quest-menu";
+ 
+class $modify(MyQuestPauseLayer, PauseLayer) {
+
+    void customSetup() {
+        PauseLayer::customSetup();
+
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
+ 
+        auto originalPage = ChallengesPage::create();
+        originalPage->setID(MY_QUEST_MENU_ID);
+
+      
+        originalPage->setTouchEnabled(false);       
+        originalPage->setOpacity(0);
+
+        if (auto mainLayer = static_cast<CCLayer*>(originalPage->getChildren()->objectAtIndex(0))) {
+            for (int i = 0; i < mainLayer->getChildrenCount(); i++) {
+                auto node = static_cast<CCNode*>(mainLayer->getChildren()->objectAtIndex(i));       
+                if (typeinfo_cast<ChallengeNode*>(node) || typeinfo_cast<CCLabelBMFont*>(node)) {
+                    node->setVisible(true);
+                }
+                else {
+                    node->setVisible(false);
+                }
+            }
+        }
+ 
+        originalPage->ignoreAnchorPointForPosition(false);
+        originalPage->setAnchorPoint({ 0.5f, 0.5f });
+        float myScale = 0.6f;
+        CCPoint myPos = (winSize / 2) + CCPoint{ 40.f, 40.f };
+
+        originalPage->setScale(myScale);
+        originalPage->setPosition(myPos);
+
+        this->addChild(originalPage);
+    }
+};
+ 
+class $modify(MyQuestNode, ChallengeNode) {
+
+    void onClaimReward(CCObject * sender) {
+       
+        auto parentLayer = this->getParent();
+        CCNode* pageNode = parentLayer ? parentLayer->getParent() : nullptr;
+
+        bool isMyMiniMenu = false;
+        if (pageNode && pageNode->getScale() < 0.9f) {
+            isMyMiniMenu = true;
+        }
+
+        if (isMyMiniMenu) {
+           
+            float savedScale = pageNode->getScale();
+            CCPoint savedPos = pageNode->getPosition();
+
+           
+            pageNode->setScale(1.0f);
+            pageNode->setPosition({ 0.f, 0.f });
+
+         
+            auto engine = FMODAudioEngine::sharedEngine();           
+            float savedVolume = engine->getEffectsVolume();        
+            engine->setEffectsVolume(0.0f);          
+            ChallengeNode::onClaimReward(sender);
+            engine->setEffectsVolume(savedVolume);   
+            pageNode->setScale(savedScale);
+            pageNode->setPosition(savedPos);
+        }
+        else {
+           
+            ChallengeNode::onClaimReward(sender);
+        }
+    }
+};
