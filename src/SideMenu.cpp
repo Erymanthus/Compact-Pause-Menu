@@ -89,8 +89,10 @@ class $modify(MySideMenu, PauseLayer) {
             "Cancel", "Exit",          
             [](auto, bool btn2) {
                 if (btn2) {
-              
-                    CCDirector::sharedDirector()->replaceScene(MenuLayer::scene(false));
+                    PlayLayer::onQuit();
+                    geode::Loader::get()->queueInMainThread([]() {
+                        CCDirector::sharedDirector()->replaceScene(MenuLayer::scene(false));
+                    });
                 }
             }
         );
